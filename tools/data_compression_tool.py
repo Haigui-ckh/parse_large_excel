@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Type, List, Dict, Any, Optional
 import pandas as pd
 from config.config import ProcessingConfig
+from utils.llm_utils import initialize_deepseek_llm
 
 class DataCompressionInput(BaseModel):
     data: Dict[str, Any] = Field(description="Parsed Excel data from excel_parser tool")
@@ -15,6 +16,9 @@ class DataCompressionTool(BaseTool):
     def _run(self, data: Dict[str, Any], config: ProcessingConfig) -> Dict[str, Any]:
         """Compress data based on configuration"""
         try:
+            # Initialize LLM for dynamic rule generation (if needed)
+            llm_config = initialize_deepseek_llm()
+            
             compressed_sheets = {}
             
             # Process each sheet

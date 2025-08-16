@@ -1,9 +1,6 @@
 # Excel Processing Agent
 
-This agent processes large-scale Excel data and generates conversation context for LLM interactions, following a three-stage pipeline:
-1. **Data Parsing** - Extract and analyze Excel data
-2. **Intelligent Compression** - Reduce data size while preserving key information
-3. **Format Adaptation** - Convert data into LLM-friendly natural language
+This agent processes large-scale Excel data and generates conversation context for LLM interactions, using LangGraph for workflow orchestration.
 
 ## Features
 
@@ -11,13 +8,16 @@ This agent processes large-scale Excel data and generates conversation context f
 - Intelligent data compression using rule engines and LLMs
 - Format adaptation for LLM context windows
 - Configurable compression intensity and task types
+- Feedback optimization mechanism
+- LangGraph-based workflow orchestration
 
 ## Technology Stack
 
 - Python 3.8+
-- LangChain for workflow orchestration
+- LangChain & LangGraph for workflow orchestration
 - Pandas & OpenPyXL for Excel processing
 - NumPy for numerical computations
+- DeepSeek API for LLM integration
 
 ## Installation
 
@@ -25,14 +25,25 @@ This agent processes large-scale Excel data and generates conversation context f
 pip install -r requirements.txt
 ```
 
+## Configuration
+
+Create a `.env` file with your API configuration:
+
+```env
+DEEPSEEK_API_KEY=sk-279a17e1202e4361839e79482a3d5d3e
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
 ## Usage
 
+### Basic Usage
+
 ```python
-from agents.excel_processing_agent import ExcelProcessingAgent
+from agents.langgraph_agent import ExcelProcessingWorkflow
 from config.config import ProcessingConfig
 
-# Initialize the agent
-agent = ExcelProcessingAgent()
+# Initialize the workflow
+workflow = ExcelProcessingWorkflow()
 
 # Configure processing options
 config = ProcessingConfig(
@@ -42,14 +53,32 @@ config = ProcessingConfig(
 )
 
 # Process an Excel file
-result = agent.process_excel(
+result = workflow.process_excel(
     file_path="path/to/your/file.xlsx",
     task_description="Analyze sales data for trends and anomalies",
     config=config
 )
 
 # View the formatted output
-print(result["formatted_content"])
+print(result)
+```
+
+### Different Compression Levels
+
+```python
+# Low compression for detailed analysis
+config_low = ProcessingConfig(
+    compression_intensity="low",
+    task_type="analysis",
+    max_output_length=3000
+)
+
+# High compression for summary
+config_high = ProcessingConfig(
+    compression_intensity="high",
+    task_type="summary",
+    max_output_length=500
+)
 ```
 
 ## Project Architecture
@@ -57,28 +86,30 @@ print(result["formatted_content"])
 ### 1. Tools (`tools/`)
 Individual processing units that perform specific tasks:
 - `ExcelParseTool` - Parses Excel files with support for multiple sheets
-- `DataCompressionTool` - Compresses data using rule-based methods
+- `DataCompressionTool` - Compresses data using rule-based methods and LLM assistance
 - `FormatAdapterTool` - Converts data into natural language format
 
-### 2. Chains (`chains/`)
-LangChain components that orchestrate tools:
-- `ExcelProcessingChain` - Sequential chain that connects all processing steps
+### 2. Agents (`agents/`)
+Workflow controllers:
+- `ExcelProcessingAgent` - Traditional LangChain agent
+- `LangGraphAgent` - LangGraph-based workflow implementation
 
-### 3. Agents (`agents/`)
-High-level controllers that manage the workflow:
-- `ExcelProcessingAgent` - Main agent that executes the processing pipeline
-
-### 4. Utilities (`utils/`)
-Helper functions for common operations:
+### 3. Utilities (`utils/`)
+Helper functions:
 - `ExcelParser` - Low-level Excel parsing utilities
+- `LLMUtils` - LLM integration utilities
 
-### 5. Configuration (`config/`)
+### 4. Configuration (`config/`)
 Configuration definitions:
 - `ProcessingConfig` - Configuration schema for processing parameters
 
-## Sample Data
+## Workflow Process
 
-The repository includes a `generate_sample_data.py` script that creates sample Excel data for testing.
+The agent follows a three-stage pipeline implemented with LangGraph:
+
+1. **Data Parsing** - Extract and analyze Excel data
+2. **Intelligent Compression** - Reduce data size while preserving key information
+3. **Format Adaptation** - Convert data into LLM-friendly natural language
 
 ## Output Format
 
