@@ -81,6 +81,33 @@ config_high = ProcessingConfig(
 )
 ```
 
+## Test Cases
+
+The repository includes several test cases to demonstrate the agent's capabilities:
+
+### 1. Comprehensive Test (`test_comprehensive.py`)
+Tests the agent with different configurations and task types:
+```bash
+python test_comprehensive.py
+```
+
+### 2. Feedback Optimization Test (`test_feedback.py`)
+Demonstrates how the agent can adapt to user feedback:
+```bash
+python test_feedback.py
+```
+
+### 3. Error Handling Test (`test_error_handling.py`)
+Tests error handling and edge cases:
+```bash
+python test_error_handling.py
+```
+
+### 4. Sample Data Generation
+Scripts to generate test data:
+- `generate_sample_data.py`: Simple sample data
+- `generate_complex_sample_data.py`: Complex sample data with anomalies
+
 ## Project Architecture
 
 ### 1. Tools (`tools/`)
