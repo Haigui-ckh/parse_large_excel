@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Type, List, Dict, Any, Optional
 import pandas as pd
 from config.config import ProcessingConfig
+from utils.llm_utils import extract_key_insights
 
 class FormatAdapterInput(BaseModel):
     data: Dict[str, Any] = Field(description="Compressed data from data_compressor tool")
@@ -20,23 +21,35 @@ class FormatAdapterTool(BaseTool):
             output_lines = []
             output_lines.append(f"Task: {task_description}")
             
-            # Extract key metrics from the data
-            core_indicators = self._extract_core_indicators(data)
-            if core_indicators:
-                output_lines.append("Core indicators:")
-                # Remove duplicates while preserving order
-                unique_indicators = list(dict.fromkeys(core_indicators))
-                for indicator in unique_indicators:
-                    output_lines.append(f"- {indicator}")
+            # Create a summary of the data for LLM analysis
+            data_summary = self._create_data_summary(data)
             
-            # Extract classification analysis
-            classification_analysis = self._extract_classification_analysis(data)
-            if classification_analysis:
-                output_lines.append("\nClassification analysis:")
-                # Remove duplicates while preserving order
-                unique_analysis = list(dict.fromkeys(classification_analysis))
-                for analysis in unique_analysis:
-                    output_lines.append(f"- {analysis}")
+            # Use LLM to extract key insights
+            key_insights = extract_key_insights(data_summary, task_description)
+            
+            # Add the LLM-generated insights to the output
+            if key_insights and "Error calling LLM" not in key_insights:
+                # Parse the LLM response and format it properly
+                output_lines.append("")  # Empty line for separation
+                output_lines.append(key_insights)
+            else:
+                # Fallback to rule-based extraction if LLM fails
+                core_indicators = self._extract_core_indicators(data)
+                if core_indicators:
+                    output_lines.append("Core indicators:")
+                    # Remove duplicates while preserving order
+                    unique_indicators = list(dict.fromkeys(core_indicators))
+                    for indicator in unique_indicators:
+                        output_lines.append(f"- {indicator}")
+                
+                # Extract classification analysis
+                classification_analysis = self._extract_classification_analysis(data)
+                if classification_analysis:
+                    output_lines.append("\nClassification analysis:")
+                    # Remove duplicates while preserving order
+                    unique_analysis = list(dict.fromkeys(classification_analysis))
+                    for analysis in unique_analysis:
+                        output_lines.append(f"- {analysis}")
             
             # Join all lines
             formatted_content = "\n".join(output_lines)
@@ -57,6 +70,30 @@ class FormatAdapterTool(BaseTool):
                 "status": "error",
                 "message": f"Failed to format data: {str(e)}"
             }
+    
+    def _create_data_summary(self, data: Dict[str, Any]) -> str:
+        """Create a summary of the data for LLM analysis"""
+        summary_lines = []
+        
+        for sheet_name, sheet_data in data.get("sheets", {}).items():
+            df_dict = sheet_data.get("data", {})
+            if not df_dict:
+                continue
+                
+            df = pd.DataFrame.from_dict(df_dict)
+            summary_lines.append(f"Sheet '{sheet_name}': {df.shape[0]} rows, {df.shape[1]} columns")
+            
+            # Add column names
+            summary_lines.append(f"  Columns: {', '.join(df.columns[:10])}{'...' if len(df.columns) > 10 else ''}")
+            
+            # Add sample data if available
+            if not df.empty:
+                summary_lines.append("  Sample data:")
+                for i, row in df.head(3).iterrows():
+                    row_data = ", ".join([f"{col}: {val}" for col, val in row.items()][:5])
+                    summary_lines.append(f"    Row {i}: {row_data}...")
+        
+        return "\n".join(summary_lines)
     
     def _extract_core_indicators(self, data: Dict[str, Any]) -> List[str]:
         """Extract core indicators from the data"""
